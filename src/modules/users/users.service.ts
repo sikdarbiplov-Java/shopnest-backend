@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
+import { Role } from './enums/role.enum';
 
 @Injectable()
 export class UsersService {
@@ -10,6 +11,10 @@ export class UsersService {
     private repo: Repository<User>,
   ) {}
 
+  findAll() {
+    return this.repo.find();
+  }
+  
   findByEmail(email: string) {
     return this.repo.findOne({ where: { email } });
   }
@@ -21,5 +26,17 @@ export class UsersService {
 
   findById(id: number) {
     return this.repo.findOne({ where: { id } });
+  }
+
+  getVendors() {
+    return this.repo.find({
+      where: { role: Role.VENDOR },
+    });
+  }
+
+  getCustomers() {
+    return this.repo.find({
+      where: { role: Role.CUSTOMER },
+    });
   }
 }

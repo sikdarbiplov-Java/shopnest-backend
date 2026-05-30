@@ -1,28 +1,49 @@
 import { Injectable } from '@nestjs/common';
-import { ChatMessage } from './chat.types';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Message } from './entity/message.entity';
+import { Conversation } from './entity/conversation.entity';
 
 @Injectable()
 export class ChatService {
-  private messages: ChatMessage[] = [];
+  constructor(
+    @InjectRepository(Message)
+    private messageRepo: Repository<Message>,
 
-  sendMessage(text: string, file?: any): ChatMessage {
-    const msg: ChatMessage = {
-      id: Date.now(),
-      text: text || '',
-      file: file ? file.filename : null,
-      fileType: file?.mimetype?.includes('video')
-        ? 'video'
-        : file
-        ? 'image'
-        : null,
-      createdAt: new Date(),
-    };
+    @InjectRepository(Conversation)
+    private convoRepo: Repository<Conversation>,
+  ) {}
 
-    this.messages.push(msg);
-    return msg;
+  // Create or get conversation
+  async getOrCreateConversation(customerId: number, vendorId: number) {
+
+    if (!customerId || !vendorId) {
+      throw new Error('Invalid users');
+    }
+    let convo = await this.convoRepo.findOne({
+      where: { customerId, vendorId },
+    });
+
+    if (!convo) {
+      convo = this.convoRepo.create({ customerId, vendorId });
+      await this.convoRepo.save(convo);
+    }
+
+    return convo;
   }
 
-  getMessages(): ChatMessage[] {
-    return this.messages;
+  // Send message
+  async sendMessage(data: any) {
+    const msg = this.messageRepo.create(data);
+    return this.messageRepo.save(msg);
+  }
+
+  // Get messages by conversation
+  async getMessages(conversationId: number) {
+    return this.messageRepo.find({
+      where: { conversationId },
+      order: { createdAt: 'ASC' },
+    });
   }
 }
